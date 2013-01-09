@@ -2,6 +2,10 @@ package it.treviso.provincia.documentencryptor;
 
 import java.awt.EventQueue;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
@@ -13,10 +17,24 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileFilter;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.ByteBuffer;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.PublicKey;
 import java.security.Security;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -24,6 +42,19 @@ import java.util.jar.Manifest;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import javax.swing.ImageIcon;
+
+import org.bouncycastle.asn1.pkcs.RSAPublicKey;
+import org.bouncycastle.crypto.AsymmetricBlockCipher;
+import org.bouncycastle.crypto.InvalidCipherTextException;
+import org.bouncycastle.crypto.encodings.OAEPEncoding;
+import org.bouncycastle.crypto.engines.RSAEngine;
+import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
+import org.bouncycastle.crypto.params.RSAKeyParameters;
+import org.bouncycastle.crypto.util.PublicKeyFactory;
+import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPublicKey;
+import org.bouncycastle.openssl.PEMReader;
+
+import sun.misc.BASE64Decoder;
 
 public class Gui {
 
@@ -136,7 +167,8 @@ public class Gui {
 		JButton btnCifraFile = new JButton("Cifra File");
 		btnCifraFile.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				int result = encryptFile(textFile.getText(),textKey.getText());
+				int result;
+				result = encryptFile(textFile.getText(),textKey.getText());
 				switch(result) {
 				case 0:	JOptionPane.showMessageDialog(frame, "File cifrato correttamente in "+textFile.getText()+".enc"); break;
 				case 1: JOptionPane.showMessageDialog(frame, "File da cifrare non specificato","Specificare file", JOptionPane.ERROR_MESSAGE); break;
@@ -176,8 +208,91 @@ public class Gui {
 	protected int encryptFile(String file, String key) {
 		if (file == "" ) return 1;
 		if (key == "") return 2;
-		Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 		
+		File source = new File(file);
+		String fileContent;
+		try {
+			fileContent = getBytesFromFile(source);
+		} catch (IOException e1) {
+			return 5;
+		}
+		Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+		String value = "";
+       /* String fkey;
+		try {
+			fkey = getBytesFromFile(new File(key));
+		} catch (IOException e3) {
+			return 5;
+		}
+        BASE64Decoder b64 = new BASE64Decoder();*/
+        AsymmetricKeyParameter publicKey;
+		try {
+			Reader reader = new FileReader(key);
+			PEMReader pemReader = new PEMReader(reader, null);
+			publicKey = PublicKeyFactory.createKey(pemReader.readPemObject().getContent());
+		} catch (IOException e2) {
+			return 3;
+		}
+        AsymmetricBlockCipher e = new RSAEngine();
+        e = new org.bouncycastle.crypto.encodings.PKCS1Encoding(e);
+        e.init(true, publicKey);
+        
+        byte[] messageBytes = fileContent.getBytes();
+        int i = 0;
+        int len = e.getInputBlockSize();
+        while (i < messageBytes.length)
+        {
+            if (i + len > messageBytes.length)
+                len = messageBytes.length - i;
+
+            byte[] hexEncodedCipher;
+			try {
+				hexEncodedCipher = e.processBlock(messageBytes, i, len);
+				value = value + getHexString(hexEncodedCipher);
+			} catch (InvalidCipherTextException e1) {
+				System.out.println("Error: InvalidCipherTextException");
+				return 4;
+			}
+			catch (Exception e1) {
+				System.out.println("Error: getHexString");
+				return 4;
+			}
+            i += e.getInputBlockSize();
+        }
+
+        //System.out.println(value);
+        BufferedWriter out;
+		try {
+			out = new BufferedWriter(new FileWriter(file+".enc"));
+			out.write(value);
+	        out.close();
+		} catch (IOException e1) {
+			return 6;
+		}
 		return 0;
 	}
+	
+	public static String getBytesFromFile(File file) throws IOException {
+	        StringBuffer fileData = new StringBuffer(1000);
+	        BufferedReader reader = new BufferedReader(
+	                new FileReader(file));
+	        char[] buf = new char[1024];
+	        int numRead=0;
+	        while((numRead=reader.read(buf)) != -1){
+	            String readData = String.valueOf(buf, 0, numRead);
+	            fileData.append(readData);
+	            buf = new char[1024];
+	        }
+	        reader.close();
+	        return fileData.toString();
+	}
+	
+	public static String getHexString(byte[] b) throws Exception {
+        String result = "";
+        for (int i=0; i < b.length; i++) {
+            result +=
+                Integer.toString( ( b[i] & 0xff ) + 0x100, 16).substring( 1 );
+        }
+        return result;
+    }
 }
