@@ -23,6 +23,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -52,6 +53,8 @@ import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.bouncycastle.crypto.util.PublicKeyFactory;
 import org.bouncycastle.jcajce.provider.asymmetric.rsa.BCRSAPublicKey;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openssl.PEMReader;
 
 import sun.misc.BASE64Decoder;
@@ -138,19 +141,19 @@ public class Gui {
 		panel.add(chooseFile);
 		
 		JButton chooseKey = new JButton("");
-		chooseKey.setToolTipText("Seleziona file pem contenente la chiave di cifratura");
+		chooseKey.setToolTipText("Seleziona file key contenente la chiave pubblica");
 		chooseKey.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				JFileChooser chooser = new JFileChooser();
 			      chooser.setCurrentDirectory(new File("."));
 			      chooser.setFileFilter(new FileFilter() {
 			        public boolean accept(File f) {
-			          return f.getName().toLowerCase().endsWith(".pem")
+			          return f.getName().toLowerCase().endsWith(".key")
 			              || f.isDirectory();
 			        }
 
 			        public String getDescription() {
-			          return "Key Files (*.pem)";
+			          return "Key Files (*.key)";
 			        }
 			      });
 			      int r = chooser.showOpenDialog(panel);
@@ -173,6 +176,10 @@ public class Gui {
 				case 0:	JOptionPane.showMessageDialog(frame, "File cifrato correttamente in "+textFile.getText()+".enc"); break;
 				case 1: JOptionPane.showMessageDialog(frame, "File da cifrare non specificato","Specificare file", JOptionPane.ERROR_MESSAGE); break;
 				case 2: JOptionPane.showMessageDialog(frame, "Chiave di cifratura non specificata","Specificare chiave", JOptionPane.ERROR_MESSAGE); break;
+				case 3: JOptionPane.showMessageDialog(frame, "Chiave di cifratura non valida","Chiave Invalida", JOptionPane.ERROR_MESSAGE); break;
+				case 4: JOptionPane.showMessageDialog(frame, "Problemi in fase di cifratura","Errore", JOptionPane.ERROR_MESSAGE); break;
+				case 5: JOptionPane.showMessageDialog(frame, "Errore di I/O sul file, controllare di avere i permessi necessari sul file","Errore I/O", JOptionPane.ERROR_MESSAGE); break;
+				case 6: JOptionPane.showMessageDialog(frame, "Errore nel salvare il file cifrato, controllare di avere i permessi di scrittura sul file","Specificare chiave", JOptionPane.ERROR_MESSAGE); break;
 				default: JOptionPane.showMessageDialog(frame, "Errore inatteso", "Errore", JOptionPane.ERROR_MESSAGE);
 				}
 			}
@@ -206,93 +213,57 @@ public class Gui {
 	}
 
 	protected int encryptFile(String file, String key) {
-		if (file == "" ) return 1;
-		if (key == "") return 2;
-		
-		File source = new File(file);
-		String fileContent;
-		try {
-			fileContent = getBytesFromFile(source);
-		} catch (IOException e1) {
-			return 5;
-		}
-		Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-		String value = "";
-       /* String fkey;
-		try {
-			fkey = getBytesFromFile(new File(key));
-		} catch (IOException e3) {
-			return 5;
-		}
-        BASE64Decoder b64 = new BASE64Decoder();*/
-        AsymmetricKeyParameter publicKey;
-		try {
-			Reader reader = new FileReader(key);
-			PEMReader pemReader = new PEMReader(reader, null);
-			publicKey = PublicKeyFactory.createKey(pemReader.readPemObject().getContent());
-		} catch (IOException e2) {
-			return 3;
-		}
-        AsymmetricBlockCipher e = new RSAEngine();
-        e = new org.bouncycastle.crypto.encodings.PKCS1Encoding(e);
-        e.init(true, publicKey);
-        
-        byte[] messageBytes = fileContent.getBytes();
-        int i = 0;
-        int len = e.getInputBlockSize();
-        while (i < messageBytes.length)
-        {
-            if (i + len > messageBytes.length)
-                len = messageBytes.length - i;
+			if(file=="") return 1;
+			if(key=="") return 2;
+	        Security.addProvider(new BouncyCastleProvider());
+	        PGPProcessor p = new PGPProcessor();
 
-            byte[] hexEncodedCipher;
+	        byte[] original;
 			try {
-				hexEncodedCipher = e.processBlock(messageBytes, i, len);
-				value = value + getHexString(hexEncodedCipher);
-			} catch (InvalidCipherTextException e1) {
-				System.out.println("Error: InvalidCipherTextException");
-				return 4;
+				original = p.getBytesFromFile(new File(file));
+			} catch (IOException e) {
+				return 5;
 			}
-			catch (Exception e1) {
-				System.out.println("Error: getHexString");
-				return 4;
-			}
-            i += e.getInputBlockSize();
-        }
 
-        //System.out.println(value);
-        BufferedWriter out;
-		try {
-			out = new BufferedWriter(new FileWriter(file+".enc"));
-			out.write(value);
-	        out.close();
-		} catch (IOException e1) {
-			return 6;
-		}
+	        FileInputStream pubKey;
+			try {
+				pubKey = new FileInputStream(key);
+			} catch (FileNotFoundException e) {
+				return 3;
+			}
+	        byte[] encrypted;
+			try {
+				encrypted = p.encrypt(original, p.readPublicKey(pubKey), null,
+				        true, true);
+			} catch (NoSuchProviderException e) {
+				System.out.println("Error: NoSuchProviderException");
+				return 4;
+			} catch (IOException e) {
+				System.out.println("Error: IOException");
+				return 4;
+			} catch (PGPException e) {
+				System.out.println("Error: PGPException");
+				return 4;
+			}
+
+	        FileOutputStream dfis;
+			try {
+				dfis = new FileOutputStream(file+".enc");
+				dfis.write(encrypted);
+				dfis.close();
+			} catch (FileNotFoundException e) {
+				System.out.println("Error: FileNotFoundException");
+				return 6;
+			}
+	        catch (IOException e) {
+	        	System.out.println("Error: IOException");
+				return 6;
+			}
+				
+
+
 		return 0;
 	}
 	
-	public static String getBytesFromFile(File file) throws IOException {
-	        StringBuffer fileData = new StringBuffer(1000);
-	        BufferedReader reader = new BufferedReader(
-	                new FileReader(file));
-	        char[] buf = new char[1024];
-	        int numRead=0;
-	        while((numRead=reader.read(buf)) != -1){
-	            String readData = String.valueOf(buf, 0, numRead);
-	            fileData.append(readData);
-	            buf = new char[1024];
-	        }
-	        reader.close();
-	        return fileData.toString();
-	}
-	
-	public static String getHexString(byte[] b) throws Exception {
-        String result = "";
-        for (int i=0; i < b.length; i++) {
-            result +=
-                Integer.toString( ( b[i] & 0xff ) + 0x100, 16).substring( 1 );
-        }
-        return result;
-    }
+
 }
