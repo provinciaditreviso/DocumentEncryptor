@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create Runnable Jar for Project DocumentEncryptor">
+    <!--this file was created by Eclipse Runnable JAR Export Wizard-->
+    <!--ANT 1.7 is required                                        -->
+    <target name="create_run_jar">
+    	<exec executable="/usr/bin/git" outputproperty="versione">
+    			<arg value="describe" />
+    			<arg value="--tags" />
+    			<arg value="--long" />
+    			<arg value="--always" />
+    		</exec>    	            
+        <jar destfile="../jar/decryptor.jar" filesetmanifest="mergewithoutmain">
+            <manifest>
+                <attribute name="Main-Class" value="it.treviso.provincia.documentdecryptor.Gui"/>
+                <attribute name="Class-Path" value="."/>
+            	<attribute name="Versione" value="git-${versione}" />
+            </manifest>
+            <fileset dir="bin"/>
+            <zipfileset excludes="META-INF/*.SF" src="../lib/bcpkix-jdk15on-147.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="../lib/bcprov-jdk15on-147.jar"/>
+            <zipfileset excludes="META-INF/*.SF" src="../lib/bcpg-jdk15on-147.jar"/>
+        </jar>
+    </target>
+</project>
