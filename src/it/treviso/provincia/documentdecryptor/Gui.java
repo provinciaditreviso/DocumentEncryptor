@@ -148,12 +148,11 @@ public class Gui {
 		chooseKey.setBounds(374, 108, 42, 25);
 		panel.add(chooseKey);
 		
-		JButton btnCifraFile = new JButton("Cifra File");
+		JButton btnCifraFile = new JButton("Decifra File");
 		btnCifraFile.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				int result;
 				JPasswordField pwd = new JPasswordField(10); 
-				//String password = JOptionPane.showConfirmDialog(frame, pwd, "Inserire Password chiave privata", "Password", JOptionPane.PLAIN_MESSAGE);
 				int ch = JOptionPane.showConfirmDialog(null, pwd,"Inserire password",JOptionPane.OK_CANCEL_OPTION);
 				if (ch < 0 || ch == 2)  result = -1;
 				else result = decryptFile(textFile.getText(),textKey.getText(),pwd.getPassword());
@@ -165,7 +164,7 @@ public class Gui {
 					case 3: JOptionPane.showMessageDialog(frame, "Chiave di decifratura non valida","Chiave Invalida", JOptionPane.ERROR_MESSAGE); break;
 					case 4: JOptionPane.showMessageDialog(frame, "Problemi in fase di decifratura","Errore", JOptionPane.ERROR_MESSAGE); break;
 					case 5: JOptionPane.showMessageDialog(frame, "Errore di I/O sul file, controllare di avere i permessi necessari sul file","Errore I/O", JOptionPane.ERROR_MESSAGE); break;
-					case 6: JOptionPane.showMessageDialog(frame, "Errore nel salvare il file cifrato, controllare di avere i permessi di scrittura sul file","Specificare chiave", JOptionPane.ERROR_MESSAGE); break;
+					case 6: JOptionPane.showMessageDialog(frame, "Errore nel salvare il file decifrato, controllare di avere i permessi di scrittura sul file","Specificare chiave", JOptionPane.ERROR_MESSAGE); break;
 					default: JOptionPane.showMessageDialog(frame, "Errore inatteso", "Errore", JOptionPane.ERROR_MESSAGE);
 				}
 			}
