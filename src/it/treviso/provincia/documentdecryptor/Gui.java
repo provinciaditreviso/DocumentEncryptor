@@ -1,9 +1,10 @@
-package it.treviso.provincia.documentencryptor;
+package it.treviso.provincia.documentdecryptor;
 
 import it.treviso.provincia.utils.PGPProcessor;
 import java.awt.EventQueue;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -73,8 +74,8 @@ public class Gui {
 		frame.getContentPane().add(panel);
 		panel.setLayout(null);
 		
-		JLabel lblFileDaCifrare = new JLabel("File da cifrare");
-		lblFileDaCifrare.setBounds(0, 32, 109, 15);
+		JLabel lblFileDaCifrare = new JLabel("File da decifrare");
+		lblFileDaCifrare.setBounds(0, 32, 127, 15);
 		panel.add(lblFileDaCifrare);
 		
 		textFile = new JTextField();
@@ -99,6 +100,15 @@ public class Gui {
 			public void actionPerformed(ActionEvent e) {
 			      JFileChooser chooser = new JFileChooser();
 			      chooser.setCurrentDirectory(new File("."));
+			      chooser.setFileFilter(new FileFilter() {
+				        public boolean accept(File f) {
+				          return f.getName().toLowerCase().endsWith(".enc") || f.isDirectory();
+				        }
+
+				        public String getDescription() {
+				          return "Encrypted files (*.enc)";
+				        }
+				      });
 			      int r = chooser.showOpenDialog(panel);
 			      if (r == JFileChooser.APPROVE_OPTION) {
 			        String filename = chooser.getSelectedFile().getPath();
@@ -112,7 +122,7 @@ public class Gui {
 		panel.add(chooseFile);
 		
 		JButton chooseKey = new JButton("");
-		chooseKey.setToolTipText("Seleziona file key contenente la chiave pubblica");
+		chooseKey.setToolTipText("Seleziona file key contenente la chiave privata");
 		chooseKey.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				JFileChooser chooser = new JFileChooser();
@@ -142,16 +152,21 @@ public class Gui {
 		btnCifraFile.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				int result;
-				result = encryptFile(textFile.getText(),textKey.getText());
+				JPasswordField pwd = new JPasswordField(10); 
+				//String password = JOptionPane.showConfirmDialog(frame, pwd, "Inserire Password chiave privata", "Password", JOptionPane.PLAIN_MESSAGE);
+				int ch = JOptionPane.showConfirmDialog(null, pwd,"Inserire password",JOptionPane.OK_CANCEL_OPTION);
+				if (ch < 0 || ch == 2)  result = -1;
+				else result = decryptFile(textFile.getText(),textKey.getText(),pwd.getPassword());
 				switch(result) {
-				case 0:	JOptionPane.showMessageDialog(frame, "File cifrato correttamente in "+textFile.getText()+".enc"); break;
-				case 1: JOptionPane.showMessageDialog(frame, "File da cifrare non specificato","Specificare file", JOptionPane.ERROR_MESSAGE); break;
-				case 2: JOptionPane.showMessageDialog(frame, "Chiave di cifratura non specificata","Specificare chiave", JOptionPane.ERROR_MESSAGE); break;
-				case 3: JOptionPane.showMessageDialog(frame, "Chiave di cifratura non valida","Chiave Invalida", JOptionPane.ERROR_MESSAGE); break;
-				case 4: JOptionPane.showMessageDialog(frame, "Problemi in fase di cifratura","Errore", JOptionPane.ERROR_MESSAGE); break;
-				case 5: JOptionPane.showMessageDialog(frame, "Errore di I/O sul file, controllare di avere i permessi necessari sul file","Errore I/O", JOptionPane.ERROR_MESSAGE); break;
-				case 6: JOptionPane.showMessageDialog(frame, "Errore nel salvare il file cifrato, controllare di avere i permessi di scrittura sul file","Specificare chiave", JOptionPane.ERROR_MESSAGE); break;
-				default: JOptionPane.showMessageDialog(frame, "Errore inatteso", "Errore", JOptionPane.ERROR_MESSAGE);
+					case -1: JOptionPane.showMessageDialog(frame,"Decifratura annullata"); break;
+					case 0:	JOptionPane.showMessageDialog(frame, "File decifrato correttamente in "+textFile.getText().substring(0, textFile.getText().lastIndexOf("."))); break;
+					case 1: JOptionPane.showMessageDialog(frame, "File da cifrare non specificato","Specificare file", JOptionPane.ERROR_MESSAGE); break;
+					case 2: JOptionPane.showMessageDialog(frame, "Chiave di decifratura non specificata","Specificare chiave", JOptionPane.ERROR_MESSAGE); break;
+					case 3: JOptionPane.showMessageDialog(frame, "Chiave di decifratura non valida","Chiave Invalida", JOptionPane.ERROR_MESSAGE); break;
+					case 4: JOptionPane.showMessageDialog(frame, "Problemi in fase di decifratura","Errore", JOptionPane.ERROR_MESSAGE); break;
+					case 5: JOptionPane.showMessageDialog(frame, "Errore di I/O sul file, controllare di avere i permessi necessari sul file","Errore I/O", JOptionPane.ERROR_MESSAGE); break;
+					case 6: JOptionPane.showMessageDialog(frame, "Errore nel salvare il file cifrato, controllare di avere i permessi di scrittura sul file","Specificare chiave", JOptionPane.ERROR_MESSAGE); break;
+					default: JOptionPane.showMessageDialog(frame, "Errore inatteso", "Errore", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		});
@@ -177,15 +192,17 @@ public class Gui {
 				} catch (IOException E) {
 				  E.printStackTrace();
 				}
-				JOptionPane.showMessageDialog(frame, "DocumentEncryptor versione "+versione+"\nProvincia di Treviso, Settore Sistemi Informatici");
+				JOptionPane.showMessageDialog(frame, "DocumentDecryptor versione "+versione+"\nProvincia di Treviso, Settore Sistemi Informatici");
 			}
 		});
 		mnAiuto.add(mntmInformazioni);
 	}
 
-	protected int encryptFile(String file, String key) {
-			if(file=="") return 1;
-			if(key=="") return 2;
+	protected int decryptFile(String file, String key, char[] password) {
+			File f = new File(file);
+			if(!f.exists()) return 1;
+			f = new File(key);
+			if(!f.exists()) return 2;
 	        Security.addProvider(new BouncyCastleProvider());
 	        PGPProcessor p = new PGPProcessor();
 
@@ -196,16 +213,15 @@ public class Gui {
 				return 5;
 			}
 
-	        FileInputStream pubKey;
+	        FileInputStream privKey;
 			try {
-				pubKey = new FileInputStream(key);
+				privKey = new FileInputStream(key);
 			} catch (FileNotFoundException e) {
 				return 3;
 			}
-	        byte[] encrypted;
+	        byte[] decrypted;
 			try {
-				encrypted = p.encrypt(original, p.readPublicKey(pubKey), null,
-				        true, true);
+				decrypted = p.decrypt(original, privKey, password);
 			} catch (NoSuchProviderException e) {
 				System.out.println("Error: NoSuchProviderException");
 				return 4;
@@ -219,8 +235,8 @@ public class Gui {
 
 	        FileOutputStream dfis;
 			try {
-				dfis = new FileOutputStream(file+".enc");
-				dfis.write(encrypted);
+				dfis = new FileOutputStream(file.substring(0, file.lastIndexOf('.')));
+				dfis.write(decrypted);
 				dfis.close();
 			} catch (FileNotFoundException e) {
 				System.out.println("Error: FileNotFoundException");

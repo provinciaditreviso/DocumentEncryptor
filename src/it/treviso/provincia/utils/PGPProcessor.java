@@ -1,4 +1,4 @@
-package it.treviso.provincia.documentencryptor;
+package it.treviso.provincia.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
