@@ -1,0 +1,29 @@
+<launch4jConfig>
+  <dontWrapJar>false</dontWrapJar>
+  <headerType>gui</headerType>
+  <jar>C:\Users\l_lorenzetto\Desktop\encryptor.jar</jar>
+  <outfile>C:\Users\l_lorenzetto\Desktop\DocumentEncryptor\encryptor.exe</outfile>
+  <errTitle>Java non installato</errTitle>
+  <cmdLine></cmdLine>
+  <chdir></chdir>
+  <priority>normal</priority>
+  <downloadUrl>http://java.com/download</downloadUrl>
+  <supportUrl></supportUrl>
+  <customProcName>false</customProcName>
+  <stayAlive>false</stayAlive>
+  <manifest></manifest>
+  <icon>C:\Users\l_lorenzetto\Desktop\DocumentEncryptor\gdu-encrypted-lock.ico</icon>
+  <classPath>
+    <mainClass>it.treviso.provincia.documentencryptor.Gui</mainClass>
+    <cp>.</cp>
+    <cp>lib/bcpg-jdk15on-147.jar</cp>
+    <cp>lib/bcpkix-jdk15on-147.jar</cp>
+    <cp>lib/bcprov-jdk15on-147.jar</cp>
+  </classPath>
+  <jre>
+    <path></path>
+    <minVersion>1.6.0</minVersion>
+    <maxVersion></maxVersion>
+    <jdkPreference>preferJre</jdkPreference>
+  </jre>
+</launch4jConfig>
