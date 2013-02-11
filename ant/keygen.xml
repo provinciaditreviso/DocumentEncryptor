@@ -10,9 +10,9 @@
     			<arg value="--long" />
     			<arg value="--always" />
     		</exec>    	            
-        <jar destfile="../jar/encryptor.jar" filesetmanifest="mergewithoutmain">
+        <jar destfile="../jar/keygenerator.jar" filesetmanifest="mergewithoutmain">
             <manifest>
-                <attribute name="Main-Class" value="it.treviso.provincia.documentencryptor.Gui"/>
+                <attribute name="Main-Class" value="it.treviso.provincia.keygenerator.Gui"/>
                 <attribute name="Class-Path" value="."/>
             	<attribute name="Versione" value="git-${versione}" />
             </manifest>
