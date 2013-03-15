@@ -7,7 +7,7 @@ Questo set di programmi è stato scritto come supporto alle gare d'appalto via P
 Installazione
 --------
 
-Una volta compilato il pacchetto con i file ant disponibile nella directory ant/ si possono costruire degli eseguibili per windows con il software [launch4j http://launch4j.sourceforge.net/].
+Una volta compilato il pacchetto con i file ant disponibile nella directory ant/ si possono costruire degli eseguibili per windows con il software [launch4j][http://launch4j.sourceforge.net/].
 
 Per la generazione delle chiavi è necessario assicurarsi di non avere alcuna restrizione crittografica su java, eventualmente installando i "Java Cryptography Extension (JCE) Unlimited Strength Jurisdiction Policy Files" dal sito di Java.
 
@@ -26,7 +26,7 @@ This set of softwares has been built as support for public tenders via PEC (Ital
 Installation
 ------------
 
-Once compiled using the ant files in the ant/ directory, is possibile to build windows binaries using [launch4j http://launch4j.sourceforge.net/].
+Once compiled using the ant files in the ant/ directory, is possibile to build windows binaries using [launch4j][http://launch4j.sourceforge.net/].
 
 For generating keys it's necessary to ensure that there is no cryptographic restriction on java, installing "Java Cryptography Extension (JCE) Unlimited Strength Jurisdiction Policy Files" from the Java Website
 
